@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Checker</title>
+    <style>
+        :root {
+            --primary: #4a6fa5;
+            --secondary: #166088;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --success: #28a745;
+            --danger: #dc3545;
+            --border-radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .app-description {
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .upload-container {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .drop-area {
+            border: 2px dashed #ccc;
+            border-radius: var(--border-radius);
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: var(--light);
+        }
+
+        .drop-area.highlight {
+            border-color: var(--primary);
+            background-color: rgba(74, 111, 165, 0.1);
+        }
+
+        .drop-area p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .upload-btn:hover {
+            background-color: var(--secondary);
+        }
+
+        .controls {
+            padding: 20px 30px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .threshold-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .threshold-control label {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .threshold-value {
+            font-weight: bold;
+            width: 40px;
+            text-align: center;
+        }
+
+        .results-container {
+            padding: 30px;
+            display: none;
+        }
+
+        .image-preview {
+            display: flex;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .results {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .color-summary {
+            margin-bottom: 20px;
+        }
+
+        .color-bar {
+            height: 40px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            overflow: hidden;
+            display: flex;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-segment {
+            height: 100%;
+            transition: width 0.5s;
+        }
+
+        .color-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: var(--border-radius);
+            background-color: var(--light);
+        }
+
+        .color-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .color-name {
+            font-weight: 500;
+        }
+
+        .color-percentage {
+            margin-left: auto;
+            font-weight: bold;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(74, 111, 165, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            font-weight: 500;
+            color: var(--primary);
+        }
+
+        .error-message {
+            display: none;
+            color: var(--danger);
+            text-align: center;
+            padding: 15px;
+            background-color: rgba(220, 53, 69, 0.1);
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .image-preview {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .preview-img {
+                align-self: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Color Checker</h1>
+            <p class="app-description">Upload an image to analyze its color distribution across basic color categories.</p>
+        </header>
+        
+        <div class="upload-container">
+            <div class="drop-area" id="dropArea">
+                <p>Drag and drop an image here</p>
+                <p>OR</p>
+                <label for="fileInput" class="upload-btn">Choose an image</label>
+                <input type="file" id="fileInput" class="file-input" accept="image/*">
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+        
+        <div class="controls">
+            <div class="threshold-control">
+                <label for="thresholdSlider">Minimum color threshold:</label>
+                <input type="range" id="thresholdSlider" min="0" max="5" step="0.1" value="0.5">
+                <span id="thresholdValue" class="threshold-value">0.5%</span>
+            </div>
+        </div>
+        
+        <div class="results-container" id="resultsContainer">
+            <div class="image-preview">
+                <img id="previewImg" class="preview-img" alt="Uploaded image">
+                <div class="results">
+                    <h2 class="color-summary">Color Distribution</h2>
+                    <div class="color-bar" id="colorBar"></div>
+                    <div class="color-list" id="colorList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="loading-overlay" id="loadingOverlay">
+        <div>
+            <div class="spinner"></div>
+            <div class="loading-text">Analyzing image colors...</div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced and expanded color definitions - 20 categories with improved coverage
+        const COLOR_CATEGORIES = [
+            // Reds
+            { name: 'Red', color: '#e53935', isColor: (r, g, b) => 
+                r > 180 && g < 120 && b < 120 && (r - Math.max(g, b)) > 60
+            },
+            { name: 'Dark Red', color: '#b71c1c', isColor: (r, g, b) => 
+                r > 100 && r <= 180 && g < 100 && b < 100 && (r - Math.max(g, b)) > 30
+            },
+            { name: 'Pink', color: '#f48fb1', isColor: (r, g, b) => 
+                r > 180 && g > 100 && g < 180 && b > 100 && b < 180 && r > g && r > b
+            },
+            
+            // Oranges & Browns
+            { name: 'Orange', color: '#ff9800', isColor: (r, g, b) => 
+                r > 180 && g > 80 && g < 200 && b < 120 && r > g && g > b
+            },
+            { name: 'Light Brown', color: '#a1887f', isColor: (r, g, b) => 
+                r > 120 && r < 200 && g > 80 && g < 150 && b > 60 && b < 130 && r > g && g > b
+            },
+            { name: 'Brown', color: '#795548', isColor: (r, g, b) => 
+                r > 80 && r < 160 && g > 40 && g < 120 && b > 20 && b < 100 && r > g && g >= b
+            },
+            { name: 'Dark Brown', color: '#5d4037', isColor: (r, g, b) => 
+                r > 40 && r < 120 && g > 20 && g < 80 && b > 10 && b < 60 && r > g && g >= b
+            },
+            
+            // Yellows
+            { name: 'Yellow', color: '#ffeb3b', isColor: (r, g, b) => 
+                r > 180 && g > 180 && b < 120 && (Math.min(r, g) - b) > 50
+            },
+            { name: 'Gold', color: '#ffc107', isColor: (r, g, b) => 
+                r > 180 && g > 150 && g < 200 && b < 100 && (r - b) > 80
+            },
+            
+            // Greens
+            { name: 'Light Green', color: '#8bc34a', isColor: (r, g, b) => 
+                r > 80 && r < 170 && g > 160 && b < 160 && g > r && g > b
+            },
+            { name: 'Green', color: '#4caf50', isColor: (r, g, b) => 
+                r < 120 && g > 120 && g < 200 && b < 120 && g > r && g > b
+            },
+            { name: 'Dark Green', color: '#2e7d32', isColor: (r, g, b) => 
+                r < 80 && g > 60 && g < 140 && b < 80 && g > r && g > b
+            },
+            
+            // Blues & Aquas
+            { name: 'Teal', color: '#009688', isColor: (r, g, b) => 
+                r < 100 && g > 100 && g < 180 && b > 80 && b < 160 && g >= b && g > r
+            },
+            { name: 'Cyan', color: '#00bcd4', isColor: (r, g, b) => 
+                r < 100 && g > 120 && b > 120 && Math.abs(g - b) < 50
+            },
+            { name: 'Light Blue', color: '#03a9f4', isColor: (r, g, b) => 
+                r < 120 && g > 120 && g < 200 && b > 180 && b > g
+            },
+            { name: 'Blue', color: '#2196f3', isColor: (r, g, b) => 
+                r < 100 && g > 50 && g < 170 && b > 150 && b > g && (b - r) > 50
+            },
+            { name: 'Dark Blue', color: '#1a237e', isColor: (r, g, b) => 
+                r < 80 && g < 100 && b > 80 && b < 180 && b > r && b > g
+            },
+            
+            // Purples & Violets
+            { name: 'Purple', color: '#9c27b0', isColor: (r, g, b) => 
+                r > 80 && r < 180 && g < 120 && b > 80 && b < 200 && b > g && r > g
+            },
+            { name: 'Magenta', color: '#e91e63', isColor: (r, g, b) => 
+                r > 150 && g < 120 && b > 80 && b < 180 && r > b && (r - g) > 50
+            },
+            { name: 'Violet', color: '#673ab7', isColor: (r, g, b) => 
+                r > 60 && r < 150 && g < 100 && b > 120 && b > r
+            },
+            
+            // Grayscale (should be checked last)
+            { name: 'White', color: '#ffffff', isColor: (r, g, b) => 
+                r > 220 && g > 220 && b > 220 && Math.max(r, g, b) - Math.min(r, g, b) < 30
+            },
+            { name: 'Light Gray', color: '#e0e0e0', isColor: (r, g, b) => 
+                r > 160 && r <= 220 && g > 160 && g <= 220 && b > 160 && b <= 220 && 
+                Math.max(r, g, b) - Math.min(r, g, b) < 30
+            },
+            { name: 'Gray', color: '#9e9e9e', isColor: (r, g, b) => 
+                r > 80 && r <= 160 && g > 80 && g <= 160 && b > 80 && b <= 160 && 
+                Math.max(r, g, b) - Math.min(r, g, b) < 30
+            },
+            { name: 'Dark Gray', color: '#616161', isColor: (r, g, b) => 
+                r > 40 && r <= 80 && g > 40 && g <= 80 && b > 40 && b <= 80 && 
+                Math.max(r, g, b) - Math.min(r, g, b) < 30
+            },
+            { name: 'Black', color: '#212121', isColor: (r, g, b) => 
+                r <= 40 && g <= 40 && b <= 40 && Math.max(r, g, b) - Math.min(r, g, b) < 20
+            },
+            
+            // Fallback categories for edge cases
+            { name: 'Beige', color: '#d7ccc8', isColor: (r, g, b) => 
+                r > 180 && g > 160 && b > 140 && r > g && g > b && (r - b) < 80
+            },
+            { name: 'Olive', color: '#827717', isColor: (r, g, b) => 
+                r > 80 && r < 160 && g > 80 && g < 160 && b < 80 && r <= g
+            }
+        ];
+
+        // DOM elements
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const thresholdSlider = document.getElementById('thresholdSlider');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const previewImg = document.getElementById('previewImg');
+        const colorBar = document.getElementById('colorBar');
+        const colorList = document.getElementById('colorList');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Event listeners for drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('highlight');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('highlight');
+        }
+
+        // Handle file drop
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        // Handle file input change
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+
+        // Click on drop area to trigger file input
+        dropArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        // Threshold slider
+        thresholdSlider.addEventListener('input', function() {
+            const val = parseFloat(this.value).toFixed(1);
+            thresholdValue.textContent = val + '%';
+            
+            // Reanalyze if an image is already loaded
+            if (previewImg.src && previewImg.src !== '') {
+                const img = new Image();
+                img.onload = function() {
+                    analyzeImage(img);
+                };
+                img.src = previewImg.src;
+            }
+        });
+
+        // Handle files
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            
+            // Check if file is an image
+            if (!file.type.match('image.*')) {
+                showError('Please upload an image file (JPEG, PNG, GIF, etc.)');
+                return;
+            }
+            
+            // Clear previous error
+            hideError();
+            
+            // Show loading
+            showLoading();
+            
+            // Create reader to read the file
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Preview image
+                    previewImg.src = img.src;
+                    
+                    // Analyze image
+                    analyzeImage(img);
+                    
+                    // Hide loading and show results
+                    hideLoading();
+                    resultsContainer.style.display = 'block';
+                };
+                
+                img.onerror = function() {
+                    hideLoading();
+                    showError('Failed to load image. Please try another file.');
+                };
+                
+                img.src = e.target.result;
+            };
+            
+            reader.onerror = function() {
+                hideLoading();
+                showError('Error reading file. Please try again.');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Function to find closest color category
+        function findClosestColorCategory(r, g, b) {
+            // First try exact matches using the isColor functions
+            for (const category of COLOR_CATEGORIES) {
+                if (category.isColor(r, g, b)) {
+                    return category.name;
+                }
+            }
+            
+            // If no exact match, find the closest color using color distance
+            let minDistance = Infinity;
+            let closestCategory = null;
+            
+            // Extract RGB values from category.color (hex)
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            }
+            
+            // Calculate weighted color distance (giving more weight to luminance differences)
+            function colorDistance(r1, g1, b1, r2, g2, b2) {
+                // Weighted Euclidean distance
+                const rMean = (r1 + r2) / 2;
+                const rWeight = 2 + rMean / 256;
+                const gWeight = 4.0;
+                const bWeight = 2 + (255 - rMean) / 256;
+                
+                return Math.sqrt(
+                    rWeight * Math.pow(r1 - r2, 2) +
+                    gWeight * Math.pow(g1 - g2, 2) +
+                    bWeight * Math.pow(b1 - b2, 2)
+                );
+            }
+            
+            for (const category of COLOR_CATEGORIES) {
+                const categoryRgb = hexToRgb(category.color);
+                const distance = colorDistance(
+                    r, g, b,
+                    categoryRgb.r, categoryRgb.g, categoryRgb.b
+                );
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestCategory = category.name;
+                }
+            }
+            
+            return closestCategory;
+        }
+
+        // Analyze image colors
+        function analyzeImage(img) {
+            // Create canvas to analyze the image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas dimensions, but scale down large images for performance
+            const maxSize = 500;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > height && width > maxSize) {
+                height = Math.round(height * maxSize / width);
+                width = maxSize;
+            } else if (height > maxSize) {
+                width = Math.round(width * maxSize / height);
+                height = maxSize;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Draw image on canvas
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Get image data
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const pixels = imageData.data;
+            
+            // Initialize color counters
+            const colorCounts = {};
+            COLOR_CATEGORIES.forEach(category => {
+                colorCounts[category.name] = 0;
+            });
+            
+            let otherCount = 0;
+            const totalPixels = width * height;
+            
+            // Analyze each pixel
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                const a = pixels[i + 3];
+                
+                // Skip transparent pixels
+                if (a < 128) continue;
+                
+                // Find best matching color category using the improved algorithm
+                const colorCategory = findClosestColorCategory(r, g, b);
+                
+                if (colorCategory) {
+                    colorCounts[colorCategory]++;
+                } else {
+                    otherCount++;
+                }
+            }
+            
+            // Calculate percentages and create results
+            const threshold = parseFloat(thresholdSlider.value);
+            const colorPercentages = [];
+            
+            // Convert counts to percentages
+            COLOR_CATEGORIES.forEach(category => {
+                const percentage = (colorCounts[category.name] / totalPixels) * 100;
+                if (percentage >= threshold) {
+                    colorPercentages.push({
+                        name: category.name,
+                        color: category.color,
+                        percentage: percentage
+                    });
+                }
+            });
+            
+            // Add "Other" if needed and above threshold
+            const otherPercentage = (otherCount / totalPixels) * 100;
+            if (otherPercentage >= threshold) {
+                colorPercentages.push({
+                    name: 'Other',
+                    color: '#9e9e9e',
+                    percentage: otherPercentage
+                });
+            }
+            
+            // Sort by percentage (descending)
+            colorPercentages.sort((a, b) => b.percentage - a.percentage);
+            
+            // Display results
+            displayResults(colorPercentages);
+        }
+
+        // Display analysis results
+        function displayResults(colorPercentages) {
+            // Clear previous results
+            colorBar.innerHTML = '';
+            colorList.innerHTML = '';
+            
+            // Create color bar segments
+            colorPercentages.forEach(item => {
+                const segment = document.createElement('div');
+                segment.className = 'color-segment';
+                segment.style.backgroundColor = item.color;
+                segment.style.width = item.percentage + '%';
+                colorBar.appendChild(segment);
+            });
+            
+            // Create color list items
+            colorPercentages.forEach(item => {
+                const colorItem = document.createElement('div');
+                colorItem.className = 'color-item';
+                
+                const colorSwatch = document.createElement('div');
+                colorSwatch.className = 'color-swatch';
+                colorSwatch.style.backgroundColor = item.color;
+                
+                const colorName = document.createElement('span');
+                colorName.className = 'color-name';
+                colorName.textContent = item.name;
+                
+                const colorPercentage = document.createElement('span');
+                colorPercentage.className = 'color-percentage';
+                colorPercentage.textContent = item.percentage.toFixed(1) + '%';
+                
+                colorItem.appendChild(colorSwatch);
+                colorItem.appendChild(colorName);
+                colorItem.appendChild(colorPercentage);
+                
+                colorList.appendChild(colorItem);
+            });
+        }
+
+        // Show/hide loading overlay
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+        
+        // Show/hide error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+        
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
